@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-05 00:38 UTC",
+  "updated_at": "2026-06-05 16:15 UTC",
   "products": {
     "MacBook Pro M3": {
       "name": "MacBook Pro M3",
@@ -38,6 +38,130 @@
           "p": 94500.0
         }
       ]
+    },
+    "ماك بوك برو macbook pro m4": {
+      "name": "ماك بوك برو macbook pro m4",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "هونر ماجك بوك ارت honor magicbook art": {
+      "name": "هونر ماجك بوك ارت honor magicbook art",
+      "offers": [
+        {
+          "price": 1610.0,
+          "currency": "دولار",
+          "store": "aramobi",
+          "title": "Honor MagicBook Art 14 Laptop",
+          "url": "https://aramobi.com/laptops/honor-magicbook-art-14-laptop-685232-specs-price/"
+        }
+      ],
+      "best": {
+        "price": 1610.0,
+        "currency": "دولار",
+        "store": "aramobi",
+        "title": "Honor MagicBook Art 14 Laptop",
+        "url": "https://aramobi.com/laptops/honor-magicbook-art-14-laptop-685232-specs-price/"
+      },
+      "best_history": [
+        {
+          "t": "2026-06-05 16:15 UTC",
+          "p": 1610.0
+        }
+      ]
+    },
+    "حذاء نايكي مايند  nike mind 001": {
+      "name": "حذاء نايكي مايند  nike mind 001",
+      "offers": [
+        {
+          "price": 149389.0,
+          "currency": "ريال",
+          "store": "بيت الأحذية",
+          "title": "Nike Mind 001 Black",
+          "url": "https://baytalahidhia.com/nike-mind-001-black/p1407867946"
+        }
+      ],
+      "best": {
+        "price": 149389.0,
+        "currency": "ريال",
+        "store": "بيت الأحذية",
+        "title": "Nike Mind 001 Black",
+        "url": "https://baytalahidhia.com/nike-mind-001-black/p1407867946"
+      },
+      "best_history": [
+        {
+          "t": "2026-06-05 16:15 UTC",
+          "p": 149389.0
+        }
+      ]
+    },
+    "مكينة قهوة xbloom studio": {
+      "name": "مكينة قهوة xbloom studio",
+      "offers": [
+        {
+          "price": 2459.0,
+          "currency": "SAR",
+          "store": "shub.coffee",
+          "title": "xBloom Studio Midnight Black",
+          "url": "https://www.shub.coffee/collections/xbloom-machines"
+        }
+      ],
+      "best": {
+        "price": 2459.0,
+        "currency": "SAR",
+        "store": "shub.coffee",
+        "title": "xBloom Studio Midnight Black",
+        "url": "https://www.shub.coffee/collections/xbloom-machines"
+      },
+      "best_history": [
+        {
+          "t": "2026-06-05 16:15 UTC",
+          "p": 2459.0
+        }
+      ]
+    },
+    "ساعة سامسونج واتش Samsung watch 8": {
+      "name": "ساعة سامسونج واتش Samsung watch 8",
+      "offers": [
+        {
+          "price": 21500.0,
+          "currency": "جنيه",
+          "store": "تلفوناك",
+          "title": "ساعة سامسونج جلاكسي واتش 8",
+          "url": "https://telfonak.com/samsung-galaxy-watch8/"
+        }
+      ],
+      "best": {
+        "price": 21500.0,
+        "currency": "جنيه",
+        "store": "تلفوناك",
+        "title": "ساعة سامسونج جلاكسي واتش 8",
+        "url": "https://telfonak.com/samsung-galaxy-watch8/"
+      },
+      "best_history": [
+        {
+          "t": "2026-06-05 16:15 UTC",
+          "p": 21500.0
+        }
+      ]
+    },
+    "ماك بوك اير macbook air m5": {
+      "name": "ماك بوك اير macbook air m5",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "اشواغندا ashwaghanda ksm66": {
+      "name": "اشواغندا ashwaghanda ksm66",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "Rtx 5070": {
+      "name": "Rtx 5070",
+      "offers": [],
+      "best": null,
+      "best_history": []
     }
   }
 }
