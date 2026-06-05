@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-05 16:15 UTC",
+  "updated_at": "2026-06-05 22:22 UTC",
   "products": {
     "MacBook Pro M3": {
       "name": "MacBook Pro M3",
@@ -50,23 +50,34 @@
       "offers": [
         {
           "price": 1610.0,
-          "currency": "دولار",
+          "currency": "دولار أمريكي",
           "store": "aramobi",
           "title": "Honor MagicBook Art 14 Laptop",
           "url": "https://aramobi.com/laptops/honor-magicbook-art-14-laptop-685232-specs-price/"
+        },
+        {
+          "price": 1110.0,
+          "currency": "دولار",
+          "store": "لا يوجد",
+          "title": "Honor MagicBook 14 Art",
+          "url": "https://www.elaosboa.com/1775392/"
         }
       ],
       "best": {
-        "price": 1610.0,
+        "price": 1110.0,
         "currency": "دولار",
-        "store": "aramobi",
-        "title": "Honor MagicBook Art 14 Laptop",
-        "url": "https://aramobi.com/laptops/honor-magicbook-art-14-laptop-685232-specs-price/"
+        "store": "لا يوجد",
+        "title": "Honor MagicBook 14 Art",
+        "url": "https://www.elaosboa.com/1775392/"
       },
       "best_history": [
         {
           "t": "2026-06-05 16:15 UTC",
           "p": 1610.0
+        },
+        {
+          "t": "2026-06-05 22:22 UTC",
+          "p": 1110.0
         }
       ]
     },
@@ -74,38 +85,34 @@
       "name": "حذاء نايكي مايند  nike mind 001",
       "offers": [
         {
-          "price": 149389.0,
-          "currency": "ريال",
-          "store": "بيت الأحذية",
-          "title": "Nike Mind 001 Black",
-          "url": "https://baytalahidhia.com/nike-mind-001-black/p1407867946"
+          "price": 249.0,
+          "currency": "SAR",
+          "store": "funst1.com",
+          "title": "شوز نايك مايند بيج رجالي 001 NIKE MIND الماستر",
+          "url": "https://funst1.com/en/rRXxNWQ"
         }
       ],
       "best": {
-        "price": 149389.0,
-        "currency": "ريال",
-        "store": "بيت الأحذية",
-        "title": "Nike Mind 001 Black",
-        "url": "https://baytalahidhia.com/nike-mind-001-black/p1407867946"
+        "price": 249.0,
+        "currency": "SAR",
+        "store": "funst1.com",
+        "title": "شوز نايك مايند بيج رجالي 001 NIKE MIND الماستر",
+        "url": "https://funst1.com/en/rRXxNWQ"
       },
       "best_history": [
         {
           "t": "2026-06-05 16:15 UTC",
           "p": 149389.0
+        },
+        {
+          "t": "2026-06-05 22:22 UTC",
+          "p": 249.0
         }
       ]
     },
     "مكينة قهوة xbloom studio": {
       "name": "مكينة قهوة xbloom studio",
-      "offers": [
-        {
-          "price": 2459.0,
-          "currency": "SAR",
-          "store": "shub.coffee",
-          "title": "xBloom Studio Midnight Black",
-          "url": "https://www.shub.coffee/collections/xbloom-machines"
-        }
-      ],
+      "offers": [],
       "best": {
         "price": 2459.0,
         "currency": "SAR",
@@ -124,24 +131,28 @@
       "name": "ساعة سامسونج واتش Samsung watch 8",
       "offers": [
         {
-          "price": 21500.0,
-          "currency": "جنيه",
-          "store": "تلفوناك",
-          "title": "ساعة سامسونج جلاكسي واتش 8",
-          "url": "https://telfonak.com/samsung-galaxy-watch8/"
+          "price": 379.99,
+          "currency": "USD",
+          "store": "Samsung US",
+          "title": "Galaxy Watch8",
+          "url": "https://www.samsung.com/us/watches/galaxy-watch8/buy/"
         }
       ],
       "best": {
-        "price": 21500.0,
-        "currency": "جنيه",
-        "store": "تلفوناك",
-        "title": "ساعة سامسونج جلاكسي واتش 8",
-        "url": "https://telfonak.com/samsung-galaxy-watch8/"
+        "price": 379.99,
+        "currency": "USD",
+        "store": "Samsung US",
+        "title": "Galaxy Watch8",
+        "url": "https://www.samsung.com/us/watches/galaxy-watch8/buy/"
       },
       "best_history": [
         {
           "t": "2026-06-05 16:15 UTC",
           "p": 21500.0
+        },
+        {
+          "t": "2026-06-05 22:22 UTC",
+          "p": 379.99
         }
       ]
     },
