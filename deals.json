@@ -1,0 +1,43 @@
+{
+  "updated_at": "2026-06-05 00:38 UTC",
+  "products": {
+    "MacBook Pro M3": {
+      "name": "MacBook Pro M3",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "Galaxy S25 Ultra": {
+      "name": "Galaxy S25 Ultra",
+      "offers": [
+        {
+          "price": 94500.0,
+          "currency": "INR",
+          "store": "91mobiles",
+          "title": "Samsung Galaxy S25 Ultra",
+          "url": "https://www.91mobiles.com/samsung-galaxy-s25-ultra-price-in-india"
+        },
+        {
+          "price": 24999000.0,
+          "currency": "VND",
+          "store": "Duchuymobile",
+          "title": "Samsung Galaxy S25 Ultra 5G (12GB | 512GB) Chính Hãng, Giá Rẻ",
+          "url": "https://www.duchuymobile.com/samsung-galaxy-s25-ultra-5g-512gb"
+        }
+      ],
+      "best": {
+        "price": 94500.0,
+        "currency": "INR",
+        "store": "91mobiles",
+        "title": "Samsung Galaxy S25 Ultra",
+        "url": "https://www.91mobiles.com/samsung-galaxy-s25-ultra-price-in-india"
+      },
+      "best_history": [
+        {
+          "t": "2026-06-05 00:38 UTC",
+          "p": 94500.0
+        }
+      ]
+    }
+  }
+}
