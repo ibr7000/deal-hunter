@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-05 22:22 UTC",
+  "updated_at": "2026-06-06 09:01 UTC",
   "products": {
     "MacBook Pro M3": {
       "name": "MacBook Pro M3",
@@ -47,22 +47,7 @@
     },
     "هونر ماجك بوك ارت honor magicbook art": {
       "name": "هونر ماجك بوك ارت honor magicbook art",
-      "offers": [
-        {
-          "price": 1610.0,
-          "currency": "دولار أمريكي",
-          "store": "aramobi",
-          "title": "Honor MagicBook Art 14 Laptop",
-          "url": "https://aramobi.com/laptops/honor-magicbook-art-14-laptop-685232-specs-price/"
-        },
-        {
-          "price": 1110.0,
-          "currency": "دولار",
-          "store": "لا يوجد",
-          "title": "Honor MagicBook 14 Art",
-          "url": "https://www.elaosboa.com/1775392/"
-        }
-      ],
+      "offers": [],
       "best": {
         "price": 1110.0,
         "currency": "دولار",
@@ -83,15 +68,7 @@
     },
     "حذاء نايكي مايند  nike mind 001": {
       "name": "حذاء نايكي مايند  nike mind 001",
-      "offers": [
-        {
-          "price": 249.0,
-          "currency": "SAR",
-          "store": "funst1.com",
-          "title": "شوز نايك مايند بيج رجالي 001 NIKE MIND الماستر",
-          "url": "https://funst1.com/en/rRXxNWQ"
-        }
-      ],
+      "offers": [],
       "best": {
         "price": 249.0,
         "currency": "SAR",
@@ -129,15 +106,7 @@
     },
     "ساعة سامسونج واتش Samsung watch 8": {
       "name": "ساعة سامسونج واتش Samsung watch 8",
-      "offers": [
-        {
-          "price": 379.99,
-          "currency": "USD",
-          "store": "Samsung US",
-          "title": "Galaxy Watch8",
-          "url": "https://www.samsung.com/us/watches/galaxy-watch8/buy/"
-        }
-      ],
+      "offers": [],
       "best": {
         "price": 379.99,
         "currency": "USD",
@@ -170,6 +139,24 @@
     },
     "Rtx 5070": {
       "name": "Rtx 5070",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "طاحونة قهوة 1zpresso zp6": {
+      "name": "طاحونة قهوة 1zpresso zp6",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "طاحونة قهوة 1zpresso j": {
+      "name": "طاحونة قهوة 1zpresso j",
+      "offers": [],
+      "best": null,
+      "best_history": []
+    },
+    "سيرفس برو surface pro 12": {
+      "name": "سيرفس برو surface pro 12",
       "offers": [],
       "best": null,
       "best_history": []
