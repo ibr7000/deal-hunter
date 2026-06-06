@@ -6,7 +6,15 @@
     "readings": []
   },
   "حذاء نايكي مايند  nike mind 001": {
-    "readings": []
+    "readings": [
+      {
+        "t": "2026-06-06 11:10",
+        "price": 950.0,
+        "currency": "SAR",
+        "store": "موقع حراج",
+        "url": "https://haraj.com.sa/11177701667/%D9%86%D8%A7%D9%8A%D9%83%D9%8A_%D9%85%D8%A7%D9%8A%D9%86%D8%AF_%D8%A7%D8%B5%D9%84%D9%8A_Nike_Mind_001_Authentic/"
+      }
+    ]
   },
   "مكينة قهوة xbloom studio": {
     "readings": []
@@ -27,6 +35,18 @@
     "readings": []
   },
   "سيرفس برو surface pro 12": {
+    "readings": []
+  },
+  "هونر ماجك بوك ارت 2025  honor magicbook art": {
+    "readings": []
+  },
+  "طاحونة قهوة ونزبريسو 1zpresso zp6": {
+    "readings": []
+  },
+  "طاحونة قهوة ونزبريسو 1zpresso j": {
+    "readings": []
+  },
+  "سيرفس برو surface pro 12 امازون": {
     "readings": []
   }
 }
