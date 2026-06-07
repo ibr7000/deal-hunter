@@ -13,20 +13,21 @@ WATCHLIST_FILE = "watchlist.txt"
 PRICES_FILE = "prices.json"
 MODEL = "llama-3.3-70b-versatile"
 
-# ===== إعدادات (موازنة بين السرعة والجودة) =====
-RESULTS_PER_PRODUCT = 4      # مصادر لكل منتج
-JINA_TIMEOUT = 40            # مهلة الصفحة الواحدة (أطول قليلاً لالتقاط أكثر)
-JINA_RETRY = True            # محاولة ثانية واحدة عند فشل بسيط
+# ===== إعدادات =====
+RESULTS_PER_PRODUCT = 3      # مصادر لكل منتج (أقل = طلبات Groq أقل = حجب أقل)
+JINA_TIMEOUT = 40
+GROQ_PAUSE = 5               # توقف بعد كل طلب Groq لاحترام الحد المجاني
+GROQ_MAX_RETRY = 4           # محاولات إعادة عند RateLimit (مع انتظار متزايد)
 SHORT_PAUSE = 2
-# ===== الجودة والتنبيه (أخف صرامة) =====
-MIN_CONFIDENCE = 4           # خفّضناها من 6 إلى 4 لقبول نتائج أكثر
+# ===== الجودة والتنبيه =====
+MIN_CONFIDENCE = 4
 MIN_DROP_PERCENT = 15
 MAX_DROP_PERCENT = 70
 MIN_READINGS_FOR_ALERT = 3
 OUTLIER_LOW_RATIO = 0.4
 OUTLIER_HIGH_RATIO = 2.6
 SUSPICIOUS_VS_HISTORY = 0.4
-# ===============================================
+# ===================
 
 BLOCK_DOMAINS = (
     "wikipedia.org", "youtube.com", "reddit.com", "facebook.com", "twitter.com",
@@ -48,7 +49,7 @@ EXTRACT_SYSTEM = (
     "2) إن وُجد سعر مشطوب قبل الخصم، فالسعر الحالي هو الأقل، وسجّل القديم في original_price.\n"
     "3) ⚠️ تجاهل أسعار التقسيط (قسط، تابي، تمارا، Tabby، Tamara، دفعات، شهرياً، مقدم).\n"
     "4) تأكد أنه المنتج المطلوب تقريباً وليس إكسسواراً واضحاً (شاحن/غلاف/كيبل) ولا قطعة غيار.\n"
-    "5) is_store=true إذا بدت صفحة بيع فيها سعر، و false فقط لو كانت بوضوح مقالة أو منتدى بلا سعر شراء.\n"
+    "5) is_store=true إذا بدت صفحة بيع فيها سعر، و false فقط لو كانت بوضوح مقالة أو منتدى بلا سعر.\n"
     "6) confidence درجة ثقتك من 0 إلى 10. إن وجدت سعراً واضحاً للمنتج اجعلها 6 أو أكثر.\n"
     "أعد JSON فقط بهذا الشكل بدون أي نص إضافي:\n"
     '{"is_store": true/false, "is_main_product": true/false, "price": رقم او null, '
@@ -116,23 +117,14 @@ def search_links(name):
 
 
 def jina_read(url):
-    """محاولة سريعة، ومحاولة ثانية واحدة فقط عند فشل بسيط."""
     headers = {"Authorization": f"Bearer {JINA_API_KEY}"} if JINA_API_KEY else {}
-    attempts = 2 if JINA_RETRY else 1
-    for i in range(attempts):
-        try:
-            resp = requests.get("https://r.jina.ai/" + url, headers=headers, timeout=JINA_TIMEOUT)
-            if resp.status_code == 200:
-                return resp.text[:9000]
-            print(f"   Jina كود {resp.status_code} (محاولة {i + 1})")
-            if resp.status_code in (429, 503) and i + 1 < attempts:
-                time.sleep(8)
-                continue
-            return None
-        except Exception as e:
-            print(f"   تخطٍّ Jina ({type(e).__name__}) محاولة {i + 1}")
-            if i + 1 < attempts:
-                time.sleep(5)
+    try:
+        resp = requests.get("https://r.jina.ai/" + url, headers=headers, timeout=JINA_TIMEOUT)
+        if resp.status_code == 200:
+            return resp.text[:9000]
+        print(f"   Jina كود {resp.status_code}")
+    except Exception as e:
+        print(f"   تخطٍّ Jina ({type(e).__name__})")
     return None
 
 
@@ -144,26 +136,45 @@ def num(x):
         return None
 
 
+def call_groq(name, text, url):
+    """يستدعي Groq مع إعادة محاولة ذكية عند تجاوز الحد المجاني (RateLimit)."""
+    for attempt in range(GROQ_MAX_RETRY):
+        try:
+            c = client.chat.completions.create(
+                model=MODEL,
+                messages=[
+                    {"role": "system", "content": EXTRACT_SYSTEM},
+                    {"role": "user", "content": f"اسم المنتج المطلوب: {name}\n\nرابط الصفحة: {url}\n\nنص الصفحة:\n{text}"},
+                ],
+                temperature=0,
+                max_tokens=300,
+                response_format={"type": "json_object"},
+            )
+            return c.choices[0].message.content
+        except Exception as e:
+            msg = str(e).lower()
+            if "rate" in msg or "429" in msg:
+                wait = 20 * (attempt + 1)   # 20، 40، 60، 80 ثانية
+                print(f"   Groq مزدحم، انتظار {wait}ث ثم إعادة (محاولة {attempt + 1})...")
+                time.sleep(wait)
+                continue
+            print(f"   خطأ Groq ({type(e).__name__})")
+            return None
+    print("   تعذّر الاستخراج بعد عدة محاولات (الحد المجاني).")
+    return None
+
+
 def extract_offer(name, text, url):
+    raw = call_groq(name, text, url)
+    if not raw:
+        return None
     try:
-        c = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": EXTRACT_SYSTEM},
-                {"role": "user", "content": f"اسم المنتج المطلوب: {name}\n\nرابط الصفحة: {url}\n\nنص الصفحة:\n{text}"},
-            ],
-            temperature=0,
-            max_tokens=300,
-            response_format={"type": "json_object"},
-        )
-        d = json.loads(c.choices[0].message.content)
+        d = json.loads(raw)
         price = num(d.get("price"))
         try:
             conf = float(d.get("confidence", 0) or 0)
         except Exception:
             conf = 0
-        # شروط ألطف: يكفي وجود سعر + ثقة معقولة + ليس مقالة صريحة.
-        # ملاحظة: in_stock افتراضه True إن لم يُحدّد، فلا نرفض بسببه.
         if price and conf >= MIN_CONFIDENCE and d.get("is_store", True):
             orig = num(d.get("original_price"))
             discount = round((orig - price) / orig * 100, 1) if (orig and orig > price) else None
@@ -173,8 +184,8 @@ def extract_offer(name, text, url):
                 "store": str(d.get("store", "")).strip() or "متجر",
                 "confidence": conf, "url": url,
             }
-    except Exception as e:
-        print(f"   تخطٍّ الاستخراج ({type(e).__name__})")
+    except Exception:
+        print("   تعذّر تحليل رد Groq.")
     return None
 
 
@@ -199,7 +210,7 @@ def send_telegram(text):
 
 
 def main():
-    print("بدء جولة V3.1 (موازنة)...")
+    print("بدء جولة V3.2 (إيقاع هادئ لـ Groq)...")
     names = load_watchlist()
     prices = load_prices()
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M")
@@ -228,6 +239,7 @@ def main():
                 tag = f" (خصم {off['discount_pct']}%)" if off.get("discount_pct") else ""
                 offers.append(off)
                 print(f"      {off['store']}: {off['price']} SAR | ثقة {off['confidence']}{tag}")
+            time.sleep(GROQ_PAUSE)   # تهدئة الإيقاع بين طلبات Groq
 
         clean = filter_outliers(offers)
         if not clean:
