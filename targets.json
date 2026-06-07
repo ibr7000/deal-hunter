@@ -1,4 +1,14 @@
 [
-  {"name": "MacBook Pro M4", "url": "https://www.extra.com/ar-sa/macbook/c/8322"},
-  {"name": "iPhone 16 Pro Max 256GB", "url": "https://www.extra.com/en-sa/mobiles/smartphones/apple-iphone-16-pro-max-256gb-desert-titanium/p/100335678"}
+  {
+    "name": "MacBook Pro M4",
+    "url": "https://www.extra.com/ar-sa/macbook/c/8322"
+  },
+  {
+    "name": "iPhone 16 Pro Max 256GB",
+    "url": "https://www.extra.com/en-sa/mobiles/smartphones/apple-iphone-16-pro-max-256gb-desert-titanium/p/100335678"
+  },
+  {
+    "name": "ماك بوك برو m4",
+    "url": "https://www.extra.com/ar-sa/macbook/c/8322"
+  }
 ]
