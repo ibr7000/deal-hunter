@@ -1,7 +1,6 @@
 import os
 import json
 import base64
-import datetime
 
 import requests
 import pandas as pd
@@ -26,24 +25,25 @@ GITHUB_REPO = secret("GITHUB_REPO")
 GITHUB_BRANCH = secret("GITHUB_BRANCH", "main")
 
 
-def read_targets_raw():
+def read_targets():
+    """يقرأ قائمة الأهداف من الملف ويعيدها كقائمة بايثون."""
     try:
         if os.path.exists(TARGETS_FILE):
             with open(TARGETS_FILE, "r", encoding="utf-8") as f:
-                return f.read()
+                data = json.load(f)
+                if isinstance(data, list):
+                    return [t for t in data if isinstance(t, dict) and t.get("name") and t.get("url")]
     except Exception:
         pass
-    return "[]"
+    return []
 
 
-def save_targets_to_github(text):
+def save_targets_to_github(targets_list):
+    """يحوّل القائمة إلى JSON ويحفظها في GitHub. المستخدم لا يرى أي JSON."""
     if not (GITHUB_TOKEN and GITHUB_REPO):
-        return False, "لم يتم ضبط GITHUB_TOKEN أو GITHUB_REPO."
+        return False, "لم يتم ضبط GITHUB_TOKEN أو GITHUB_REPO في إعدادات التطبيق."
     try:
-        json.loads(text)  # تحقق أنه JSON صحيح قبل الحفظ
-    except Exception as e:
-        return False, f"تنسيق JSON غير صحيح: {e}"
-    try:
+        text = json.dumps(targets_list, ensure_ascii=False, indent=2)
         api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{TARGETS_FILE}"
         headers = {"Authorization": f"Bearer {GITHUB_TOKEN}", "Accept": "application/vnd.github+json"}
         sha = None
@@ -59,7 +59,7 @@ def save_targets_to_github(text):
             payload["sha"] = sha
         put = requests.put(api, headers=headers, json=payload, timeout=20)
         if put.status_code in (200, 201):
-            return True, "تم الحفظ. سيُفحص في الجولة القادمة."
+            return True, "تم الحفظ بنجاح ✅"
         return False, f"فشل الحفظ: {put.status_code}"
     except Exception as e:
         return False, f"خطأ: {e}"
@@ -75,18 +75,23 @@ def read_prices():
     return {}
 
 
-st.title("🎯 صياد العروض — V4 Direct Targeter")
+st.title("🎯 صياد العروض — V4")
+
+# نحتفظ بالقائمة في ذاكرة الجلسة، ونحمّلها أول مرة من الملف
+if "targets" not in st.session_state:
+    st.session_state.targets = read_targets()
+
 prices = read_prices()
+tab1, tab2 = st.tabs(["🔥 لوحة الأسعار", "🎯 منتجاتي"])
 
-tab1, tab2 = st.tabs(["🔥 لوحة الأسعار", "🎯 الأهداف"])
-
+# ============ تبويب الأسعار ============
 with tab1:
     rows, chart_rows = [], []
     for name, info in prices.items():
         readings = info.get("readings", []) if isinstance(info, dict) else []
         url = info.get("url", "") if isinstance(info, dict) else ""
         if not readings:
-            rows.append({"المنتج": name, "أحدث سعر": None, "أقل سعر مسجل": None,
+            rows.append({"🔥": "", "المنتج": name, "أحدث سعر": None, "أقل سعر مسجل": None,
                          "الحالة": info.get("last_status", "بانتظار سعر"), "الرابط": url})
             continue
         last = readings[-1]
@@ -122,13 +127,52 @@ with tab1:
             pivot = cdf.pivot_table(index="الوقت", columns="المنتج", values="السعر", aggfunc="last")
             st.line_chart(pivot, height=380)
     else:
-        st.info("لا توجد بيانات بعد. أضف أهدافاً وشغّل الوكيل من Actions.")
+        st.info("لا توجد بيانات بعد. أضف منتجاتك من تبويب «منتجاتي» ثم شغّل الوكيل من GitHub.")
 
+# ============ تبويب منتجاتي (بدون أي JSON) ============
 with tab2:
-    st.write('أضف الأهداف بصيغة JSON. كل منتج: `{"name": "الاسم", "url": "الرابط"}`')
-    text = st.text_area("targets.json:", value=read_targets_raw(), height=300)
-    if st.button("💾 حفظ الأهداف", use_container_width=True):
-        ok, msg = save_targets_to_github(text)
-        (st.success if ok else st.error)(msg)
-        if not GITHUB_TOKEN:
-            st.info("بدون توكن GitHub عدّل ملف targets.json مباشرة من المستودع.")
+    st.subheader("➕ إضافة منتج جديد")
+    st.caption("اكتب الاسم والرابط فقط. لا حاجة لأي رموز أو أقواس.")
+
+    new_name = st.text_input("اسم المنتج", placeholder="مثال: ماك بوك برو M4 - جرير")
+    new_url = st.text_input("رابط صفحة المنتج", placeholder="https://...")
+
+    if st.button("➕ إضافة المنتج", use_container_width=True):
+        nm = (new_name or "").strip()
+        ur = (new_url or "").strip()
+        if not nm or not ur:
+            st.error("الرجاء تعبئة الاسم والرابط معاً.")
+        elif not ur.startswith("http"):
+            st.error("الرابط يجب أن يبدأ بـ http أو https.")
+        elif any(t["name"] == nm for t in st.session_state.targets):
+            st.error("هذا الاسم مستخدم. أضف كلمة مميزة (مثل اسم المتجر) ليكون مختلفاً.")
+        else:
+            st.session_state.targets.append({"name": nm, "url": ur})
+            ok, msg = save_targets_to_github(st.session_state.targets)
+            if ok:
+                st.success(f"تمت إضافة «{nm}» وحفظه ✅")
+            else:
+                st.session_state.targets.pop()  # تراجع لو فشل الحفظ
+                st.error(msg)
+
+    st.divider()
+    st.subheader("📋 منتجاتي الحالية")
+
+    if not st.session_state.targets:
+        st.info("لا توجد منتجات بعد. أضف أول منتج من الأعلى.")
+    else:
+        for i, t in enumerate(st.session_state.targets):
+            c1, c2 = st.columns([5, 1])
+            with c1:
+                st.markdown(f"**{t['name']}**")
+                st.markdown(f"[{t['url'][:55]}…]({t['url']})")
+            with c2:
+                if st.button("🗑️ حذف", key=f"del_{i}", use_container_width=True):
+                    removed = st.session_state.targets.pop(i)
+                    ok, msg = save_targets_to_github(st.session_state.targets)
+                    if ok:
+                        st.success(f"حُذف «{removed['name']}»")
+                        st.rerun()
+                    else:
+                        st.session_state.targets.insert(i, removed)  # تراجع لو فشل
+                        st.error(msg)
