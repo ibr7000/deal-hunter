@@ -12,7 +12,7 @@ from groq import Groq
 WATCHLIST_FILE = "watchlist.txt"
 PRICES_FILE = "prices.json"
 MODEL = "llama-3.3-70b-versatile"
-RESULTS_PER_PRODUCT = 5          # نفحص مصادر أكثر لأن المتاجر مفتوحة الآن
+RESULTS_PER_PRODUCT = 3         # نفحص مصادر أكثر لأن المتاجر مفتوحة الآن
 
 # ===== إعدادات قابلة للتعديل =====
 MIN_DROP_PERCENT = 15            # أقل نسبة انخفاض (مقابل أقل سعر تاريخي) تستحق تنبيهاً
