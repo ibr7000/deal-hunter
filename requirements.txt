@@ -1,5 +1,7 @@
 streamlit
 requests
-groq
-ddgs
 pandas
+cloudscraper
+curl_cffi
+beautifulsoup4
+groq
