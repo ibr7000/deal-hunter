@@ -2,7 +2,7 @@ name: Deal Hunter
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -16,21 +16,18 @@ jobs:
   hunt:
     runs-on: ubuntu-latest
     steps:
-      - name: تنزيل المستودع
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: تجهيز بايثون
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: تثبيت المكتبات
-        run: pip install -r requirements.txt
+        run: pip install cloudscraper curl_cffi beautifulsoup4 groq requests streamlit pandas
 
       - name: تشغيل الوكيل
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python hunter.py
@@ -44,11 +41,8 @@ jobs:
           for i in 1 2 3 4 5; do
             git pull --rebase --autostash origin "${{ github.ref_name }}" || true
             if git push origin "${{ github.ref_name }}"; then
-              echo "تم الرفع بنجاح"
-              exit 0
+              echo "تم الرفع"; exit 0
             fi
-            echo "محاولة رقم $i لم تنجح، سأعيد المحاولة..."
-            sleep 6
+            echo "إعادة المحاولة $i"; sleep 6
           done
-          echo "تعذّر الرفع"
-          exit 1
+          echo "تعذّر الرفع"; exit 1
