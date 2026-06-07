@@ -13,24 +13,25 @@ WATCHLIST_FILE = "watchlist.txt"
 PRICES_FILE = "prices.json"
 MODEL = "llama-3.3-70b-versatile"
 
-# ===== إعدادات السرعة (مضبوطة لتكون سريعة) =====
-RESULTS_PER_PRODUCT = 3      # عدد المصادر لكل منتج
-JINA_TIMEOUT = 25            # أقصى انتظار لصفحة واحدة (ثانية) ثم نتجاوزها
-SHORT_PAUSE = 2              # توقف قصير بين الطلبات
-# ===== إعدادات الجودة والتنبيه =====
+# ===== إعدادات (موازنة بين السرعة والجودة) =====
+RESULTS_PER_PRODUCT = 4      # مصادر لكل منتج
+JINA_TIMEOUT = 40            # مهلة الصفحة الواحدة (أطول قليلاً لالتقاط أكثر)
+JINA_RETRY = True            # محاولة ثانية واحدة عند فشل بسيط
+SHORT_PAUSE = 2
+# ===== الجودة والتنبيه (أخف صرامة) =====
+MIN_CONFIDENCE = 4           # خفّضناها من 6 إلى 4 لقبول نتائج أكثر
 MIN_DROP_PERCENT = 15
 MAX_DROP_PERCENT = 70
 MIN_READINGS_FOR_ALERT = 3
-MIN_CONFIDENCE = 6
-OUTLIER_LOW_RATIO = 0.45
-OUTLIER_HIGH_RATIO = 2.5
+OUTLIER_LOW_RATIO = 0.4
+OUTLIER_HIGH_RATIO = 2.6
 SUSPICIOUS_VS_HISTORY = 0.4
 # ===============================================
 
 BLOCK_DOMAINS = (
     "wikipedia.org", "youtube.com", "reddit.com", "facebook.com", "twitter.com",
     "x.com", "instagram.com", "tiktok.com", "pinterest.com", "quora.com",
-    "blog", "forum", "news", "article", "wordpress", "medium.com",
+    "/blog", "forum", "wordpress", "medium.com",
     "pricena", "yaoota", "priceza",
 )
 
@@ -42,18 +43,18 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 client = Groq(api_key=GROQ_API_KEY)
 
 EXTRACT_SYSTEM = (
-    "أنت محلل مشتريات خبير بالسوق السعودي. اقرأ صفحة متجر واستخرج بيانات الشراء بدقة. قواعد صارمة:\n"
+    "أنت محلل مشتريات خبير بالسوق السعودي. اقرأ صفحة متجر واستخرج بيانات الشراء. قواعد:\n"
     "1) السعر المطلوب هو السعر الحالي الإجمالي للدفع الكاش بالريال السعودي (SAR).\n"
     "2) إن وُجد سعر مشطوب قبل الخصم، فالسعر الحالي هو الأقل، وسجّل القديم في original_price.\n"
     "3) ⚠️ تجاهل أسعار التقسيط (قسط، تابي، تمارا، Tabby، Tamara، دفعات، شهرياً، مقدم).\n"
-    "4) تأكد أنه المنتج الرئيسي الكامل المطلوب وليس إكسسواراً ولا قطعة غيار ولا موديلاً مختلفاً.\n"
-    "5) is_store=true فقط إذا كانت صفحة شراء فعلية (سعر وزر شراء/سلة)، و false إن كانت مقالة أو مقارنة أسعار أو منتدى.\n"
-    "6) confidence درجة ثقتك من 0 إلى 10 في صحة السعر ومطابقة المنتج.\n"
+    "4) تأكد أنه المنتج المطلوب تقريباً وليس إكسسواراً واضحاً (شاحن/غلاف/كيبل) ولا قطعة غيار.\n"
+    "5) is_store=true إذا بدت صفحة بيع فيها سعر، و false فقط لو كانت بوضوح مقالة أو منتدى بلا سعر شراء.\n"
+    "6) confidence درجة ثقتك من 0 إلى 10. إن وجدت سعراً واضحاً للمنتج اجعلها 6 أو أكثر.\n"
     "أعد JSON فقط بهذا الشكل بدون أي نص إضافي:\n"
     '{"is_store": true/false, "is_main_product": true/false, "price": رقم او null, '
     '"original_price": رقم او null, "currency": "SAR", "store": "اسم المتجر", '
     '"in_stock": true/false, "confidence": رقم من 0 الى 10}\n'
-    "السعر رقم فقط بدون فواصل آلاف وبدون رمز. إن لم تجد سعر كاش واضح اجعل price=null وconfidence=0."
+    "السعر رقم فقط بدون فواصل آلاف وبدون رمز. إن لم تجد أي سعر للمنتج اجعل price=null."
 )
 
 
@@ -115,16 +116,23 @@ def search_links(name):
 
 
 def jina_read(url):
-    """محاولة واحدة فقط بوقت أقصى صارم. لا تعليق: إن فشلت نتجاوز فوراً."""
+    """محاولة سريعة، ومحاولة ثانية واحدة فقط عند فشل بسيط."""
     headers = {"Authorization": f"Bearer {JINA_API_KEY}"} if JINA_API_KEY else {}
-    headers["X-Engine"] = "direct"   # وضع أسرع في Jina
-    try:
-        resp = requests.get("https://r.jina.ai/" + url, headers=headers, timeout=JINA_TIMEOUT)
-        if resp.status_code == 200:
-            return resp.text[:9000]
-        print(f"   تخطٍّ: Jina كود {resp.status_code}")
-    except Exception as e:
-        print(f"   تخطٍّ: Jina ({type(e).__name__})")
+    attempts = 2 if JINA_RETRY else 1
+    for i in range(attempts):
+        try:
+            resp = requests.get("https://r.jina.ai/" + url, headers=headers, timeout=JINA_TIMEOUT)
+            if resp.status_code == 200:
+                return resp.text[:9000]
+            print(f"   Jina كود {resp.status_code} (محاولة {i + 1})")
+            if resp.status_code in (429, 503) and i + 1 < attempts:
+                time.sleep(8)
+                continue
+            return None
+        except Exception as e:
+            print(f"   تخطٍّ Jina ({type(e).__name__}) محاولة {i + 1}")
+            if i + 1 < attempts:
+                time.sleep(5)
     return None
 
 
@@ -154,8 +162,9 @@ def extract_offer(name, text, url):
             conf = float(d.get("confidence", 0) or 0)
         except Exception:
             conf = 0
-        if (d.get("is_store") and d.get("is_main_product") and price
-                and conf >= MIN_CONFIDENCE and d.get("in_stock", True)):
+        # شروط ألطف: يكفي وجود سعر + ثقة معقولة + ليس مقالة صريحة.
+        # ملاحظة: in_stock افتراضه True إن لم يُحدّد، فلا نرفض بسببه.
+        if price and conf >= MIN_CONFIDENCE and d.get("is_store", True):
             orig = num(d.get("original_price"))
             discount = round((orig - price) / orig * 100, 1) if (orig and orig > price) else None
             return {
@@ -165,7 +174,7 @@ def extract_offer(name, text, url):
                 "confidence": conf, "url": url,
             }
     except Exception as e:
-        print(f"   تخطٍّ: الاستخراج ({type(e).__name__})")
+        print(f"   تخطٍّ الاستخراج ({type(e).__name__})")
     return None
 
 
@@ -190,7 +199,7 @@ def send_telegram(text):
 
 
 def main():
-    print("بدء جولة V3 السريعة...")
+    print("بدء جولة V3.1 (موازنة)...")
     names = load_watchlist()
     prices = load_prices()
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M")
