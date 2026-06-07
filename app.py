@@ -36,7 +36,7 @@ def read_watchlist():
 
 def save_watchlist_to_github(text):
     if not (GITHUB_TOKEN and GITHUB_REPO):
-        return False, "لم يتم ضبط GITHUB_TOKEN أو GITHUB_REPO في الإعدادات."
+        return False, "لم يتم ضبط GITHUB_TOKEN أو GITHUB_REPO."
     try:
         api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{WATCHLIST_FILE}"
         headers = {"Authorization": f"Bearer {GITHUB_TOKEN}", "Accept": "application/vnd.github+json"}
@@ -69,22 +69,25 @@ def read_prices():
     return {}
 
 
-st.title("🛒 صياد العروض الذكي — V2")
+st.title("🛒 صياد العروض الذكي — V3")
 prices = read_prices()
 
 tab1, tab2 = st.tabs(["🔥 لوحة الأسعار", "📋 المنتجات"])
 
 with tab1:
-    rows = []
-    chart_frames = []
+    rows, chart_rows, waiting = [], [], []
 
     for name, info in prices.items():
         readings = info.get("readings", []) if isinstance(info, dict) else []
         if not readings:
+            waiting.append((name, info.get("last_status", "بانتظار أول سعر")))
             continue
 
-        first = readings[0]
-        last = readings[-1]
+        first, last = readings[0], readings[-1]
+        hist = [r["price"] for r in readings if r.get("price")]
+        low = min(hist) if hist else None
+
+        # التغير مقابل أول قراءة
         delta = None
         try:
             if first.get("price"):
@@ -92,46 +95,54 @@ with tab1:
         except Exception:
             delta = None
 
+        # هل السعر الحالي هو الأدنى تاريخياً؟ (فرصة)
+        is_best = (low is not None and last.get("price") is not None and last["price"] <= low)
+
         rows.append({
+            "🔥": "🔥" if is_best else "",
             "المنتج": name,
             "أحدث سعر": last.get("price"),
-            "العملة": last.get("currency", "SAR"),
+            "أقل سعر مسجل": low,
+            "خصم الصفحة %": last.get("discount_pct"),
             "المتجر": last.get("store", ""),
-            "التغير %": delta,
-            "رابط الشراء": last.get("url", ""),
+            "التغير الكلي %": delta,
+            "الشراء": last.get("url", ""),
         })
-
-        # بيانات الرسم البياني (سعر كل منتج عبر الزمن)
         for r in readings:
             if r.get("price"):
-                chart_frames.append({"الوقت": r.get("t"), "السعر": r["price"], "المنتج": name})
+                chart_rows.append({"الوقت": r.get("t"), "السعر": r["price"], "المنتج": name})
 
     if rows:
         df = pd.DataFrame(rows)
-        st.subheader("جدول الأسعار")
+        st.subheader("جدول الأسعار  ( 🔥 = الأدنى تاريخياً )")
         st.dataframe(
-            df,
-            use_container_width=True,
-            hide_index=True,
+            df, use_container_width=True, hide_index=True,
             column_config={
-                "رابط الشراء": st.column_config.LinkColumn("رابط الشراء", display_text="فتح"),
-                "التغير %": st.column_config.NumberColumn("التغير %", format="%.1f%%"),
+                "الشراء": st.column_config.LinkColumn("الشراء", display_text="فتح"),
+                "التغير الكلي %": st.column_config.NumberColumn("التغير الكلي %", format="%.1f%%"),
+                "خصم الصفحة %": st.column_config.NumberColumn("خصم الصفحة %", format="%.0f%%"),
                 "أحدث سعر": st.column_config.NumberColumn("أحدث سعر", format="%.0f"),
+                "أقل سعر مسجل": st.column_config.NumberColumn("أقل سعر مسجل", format="%.0f"),
             },
         )
-
         st.subheader("📈 تغير الأسعار عبر الزمن")
-        cdf = pd.DataFrame(chart_frames)
+        cdf = pd.DataFrame(chart_rows)
         if not cdf.empty:
             pivot = cdf.pivot_table(index="الوقت", columns="المنتج", values="السعر", aggfunc="last")
             st.line_chart(pivot, height=380)
     else:
-        st.info("لا توجد بيانات بعد. شغّل الوكيل من تبويب Actions في GitHub، ثم عُد إلى هنا.")
+        st.info("لا توجد أسعار بعد. شغّل الوكيل من Actions في GitHub ثم عُد.")
+
+    if waiting:
+        st.subheader("⏳ منتجات بلا سعر بعد")
+        st.caption("لم يُعثر لها على سعر موثوق في آخر جولة (قد تظهر في جولة قادمة).")
+        for nm, status in waiting:
+            st.markdown(f"- **{nm}** — {status}")
 
 with tab2:
-    st.write("اكتب اسم منتج واحد في كل سطر:")
+    st.write("اكتب اسم منتج واحد في كل سطر (كن دقيقاً قدر الإمكان):")
     text = st.text_area("قائمتك:", value=read_watchlist(), height=240,
-                        placeholder="iPhone 16 Pro Max\nGalaxy S25 Ultra")
+                        placeholder="مطحنة قهوة Baratza Encore\niPhone 16 Pro Max 256GB")
     if st.button("💾 حفظ القائمة", use_container_width=True):
         ok, msg = save_watchlist_to_github(text)
         (st.success if ok else st.error)(msg)
