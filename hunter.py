@@ -21,9 +21,12 @@ TARGETS_FILE = "targets.json"
 PRICES_FILE = "prices.json"
 MODEL = "llama-3.3-70b-versatile"
 FETCH_TIMEOUT = 25
-TEXT_LIMIT = 4000
+TEXT_LIMIT = 3000           # حد أقصى للنص المُجمَّع المُرسل لـ Groq
 GROQ_PAUSE = 3
 DROP_ALERT_PERCENT = 20
+
+# كلمات تدل على وجود سعر — نبحث عنها في كامل الصفحة
+PRICE_HINTS = ("sar", "ر.س", "ريال", "price", "السعر", "ر,س", "﷼")
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
@@ -34,7 +37,8 @@ client = Groq(api_key=GROQ_API_KEY)
 
 EXTRACT_SYSTEM = (
     "أنت محلل بيانات آلي. استخرج السعر النهائي الكاش بالريال السعودي من هذا النص. "
-    "تجاهل تماماً أي أسعار مقترنة بكلمات (تابي، تمارا، تقسيط، دفعات، شهرياً، مقدم). "
+    "تجاهل تماماً أي أسعار مقترنة بكلمات (تابي، تمارا، تقسيط، دفعات، شهرياً، مقدم، Tabby، Tamara). "
+    "إن وُجد سعر مشطوب قبل الخصم وسعر حالي، فالسعر المطلوب هو الحالي (الأقل). "
     'يجب أن تكون إجابتك حصراً JSON صحيحاً بهذا الهيكل: {"price": float, "status": "available"}. '
     "إن لم تجد سعراً كاش واضحاً اجعل price=null. لا تكتب أي نص إضافي."
 )
@@ -43,14 +47,12 @@ EXTRACT_SYSTEM = (
 def load_targets():
     try:
         if not os.path.exists(TARGETS_FILE):
-            print("⚠️ ملف targets.json غير موجود!")
+            print("⚠️ targets.json غير موجود!")
             return []
         with open(TARGETS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         valid = [t for t in data if t.get("url") and t.get("name")]
         print(f"📋 عدد الأهداف: {len(valid)}")
-        for t in valid:
-            print(f"   - {t['name']} → {t['url'][:60]}")
         return valid
     except Exception as e:
         print(f"⚠️ تعذّر قراءة targets.json ({e})")
@@ -83,7 +85,7 @@ def fetch_html(url):
             if r.status_code == 200 and r.text:
                 return r.text
         except Exception as e:
-            print(f"   [curl_cffi] فشل ({type(e).__name__}: {e})")
+            print(f"   [curl_cffi] فشل ({type(e).__name__})")
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
@@ -93,19 +95,54 @@ def fetch_html(url):
         if r.status_code == 200:
             return r.text
     except Exception as e:
-        print(f"   [requests] فشل ({type(e).__name__}: {e})")
+        print(f"   [requests] فشل ({type(e).__name__})")
     return None
 
 
-def clean_text(html):
+def smart_price_text(html):
+    """
+    بدل أول 4000 حرف عشوائياً: يبحث في كامل الصفحة عن المقاطع التي تذكر السعر،
+    ويجمع كل مقطع مع النص المحيط به، فيضمن وصول السعر مهما كان موقعه.
+    """
     try:
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup(["script", "style", "noscript", "svg", "head"]):
             tag.decompose()
-        text = re.sub(r"\s+", " ", soup.get_text(separator=" ", strip=True))
-        return text[:TEXT_LIMIT]
+
+        full = re.sub(r"\s+", " ", soup.get_text(separator=" ", strip=True))
+        if not full:
+            return None
+
+        low = full.lower()
+        chunks, used = [], []
+
+        # نلتقط كل موضع تظهر فيه كلمة سعر، ونأخذ ما حولها (نافذة 220 حرفاً)
+        for hint in PRICE_HINTS:
+            start = 0
+            while True:
+                idx = low.find(hint, start)
+                if idx == -1:
+                    break
+                a = max(0, idx - 120)
+                b = min(len(full), idx + 100)
+                # نتفادى تكرار نفس المنطقة
+                if not any(abs(idx - u) < 60 for u in used):
+                    chunks.append(full[a:b])
+                    used.append(idx)
+                start = idx + len(hint)
+                if len(chunks) >= 25:
+                    break
+
+        if chunks:
+            combined = " … ".join(chunks)
+            # نضيف بداية الصفحة (غالباً فيها العنوان والسعر الرئيسي) لمزيد من السياق
+            combined = full[:600] + " … " + combined
+            return combined[:TEXT_LIMIT]
+
+        # إن لم نجد أي كلمة سعر، نرجع لبداية الصفحة كحل أخير
+        return full[:TEXT_LIMIT]
     except Exception as e:
-        print(f"   تعذّر تنظيف HTML ({e})")
+        print(f"   تعذّر تجهيز النص ({type(e).__name__})")
         return None
 
 
@@ -129,12 +166,41 @@ def extract_price(text):
         d = json.loads(c.choices[0].message.content)
         return num(d.get("price")), str(d.get("status", "")).strip()
     except Exception as e:
-        print(f"   ⛔ خطأ Groq ({type(e).__name__}: {e})")
+        msg = str(e).lower()
+        if "rate" in msg or "429" in msg:
+            print("   Groq مزدحم، انتظار 25ث وإعادة...")
+            time.sleep(25)
+            try:
+                c = client.chat.completions.create(
+                    model=MODEL,
+                    messages=[{"role": "system", "content": EXTRACT_SYSTEM},
+                              {"role": "user", "content": text}],
+                    temperature=0, max_tokens=120,
+                    response_format={"type": "json_object"},
+                )
+                d = json.loads(c.choices[0].message.content)
+                return num(d.get("price")), str(d.get("status", "")).strip()
+            except Exception as e2:
+                print(f"   فشل بعد الإعادة ({type(e2).__name__})")
+        else:
+            print(f"   ⛔ خطأ Groq ({type(e).__name__})")
     return None, ""
 
 
+def send_telegram(text):
+    if not (TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
+        print("   (تنبيه تليجرام غير مُفعّل)")
+        return
+    try:
+        api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        r = plain_requests.post(api, data={"chat_id": TELEGRAM_CHAT_ID, "text": text}, timeout=20)
+        print("   ✅ أُرسل تنبيه تليجرام" if r.status_code == 200 else f"   تحذير: تليجرام {r.status_code}")
+    except Exception as e:
+        print(f"   تحذير: فشل تليجرام ({e})")
+
+
 def main():
-    print("بدء جولة V4 (تشخيصية)...")
+    print("بدء جولة V4.1 (استهداف ذكي للسعر)...")
     targets = load_targets()
     if not targets:
         print("⛔ لا توجد أهداف.")
@@ -162,11 +228,11 @@ def main():
             print("   ⛔ تعذّر جلب الصفحة.")
             continue
 
-        text = clean_text(html)
+        text = smart_price_text(html)
         if not text:
             prices[name]["last_status"] = "تعذّر قراءة المحتوى"
             continue
-        print(f"   📄 طول النص الصافي: {len(text)}")
+        print(f"   📄 طول النص المُجمَّع: {len(text)}")
 
         price, status = extract_price(text)
         time.sleep(GROQ_PAUSE)
@@ -180,6 +246,13 @@ def main():
         prices[name]["readings"] = prices[name]["readings"][-200:]
         prices[name]["last_status"] = status or "available"
         print(f"   ✅ السعر: {price} SAR | {status}")
+
+        if hist_low and price < hist_low:
+            drop = round((hist_low - price) / hist_low * 100, 1)
+            if drop >= DROP_ALERT_PERCENT:
+                send_telegram(f"🚨 انهيار في السعر! منتج {name} نزل بنسبة {drop}%. "
+                              f"السعر الآن {price} ريال. رابط الشراء: {url}")
+                print(f"   🚨 انخفاض {drop}%")
 
     save_prices(prices)
     print("\nتم الحفظ في prices.json")
