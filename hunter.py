@@ -1,46 +1,34 @@
 import os
-import re
 import json
 import time
 import datetime
 
-from bs4 import BeautifulSoup
+import requests
 from groq import Groq
-
-CFFI_OK = False
-try:
-    from curl_cffi import requests as cffi
-    CFFI_OK = True
-    print("✅ curl_cffi جاهز")
-except Exception as e:
-    print(f"⚠️ curl_cffi غير متاح ({e})")
-
-import requests as plain_requests
 
 TARGETS_FILE = "targets.json"
 PRICES_FILE = "prices.json"
 MODEL = "llama-3.3-70b-versatile"
-FETCH_TIMEOUT = 25
-TEXT_LIMIT = 3000           # حد أقصى للنص المُجمَّع المُرسل لـ Groq
-GROQ_PAUSE = 3
+SERPER_URL = "https://google.serper.dev/shopping"
+RESULTS_PER_PRODUCT = 5
+GROQ_PAUSE = 2
 DROP_ALERT_PERCENT = 20
 
-# كلمات تدل على وجود سعر — نبحث عنها في كامل الصفحة
-PRICE_HINTS = ("sar", "ر.س", "ريال", "price", "السعر", "ر,س", "﷼")
-
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-print(f"🔑 مفتاح Groq موجود: {bool(GROQ_API_KEY)}")
+print(f"🔑 Serper: {bool(SERPER_API_KEY)} | Groq: {bool(GROQ_API_KEY)}")
 client = Groq(api_key=GROQ_API_KEY)
 
 EXTRACT_SYSTEM = (
-    "أنت محلل بيانات آلي. استخرج السعر النهائي الكاش بالريال السعودي من هذا النص. "
-    "تجاهل تماماً أي أسعار مقترنة بكلمات (تابي، تمارا، تقسيط، دفعات، شهرياً، مقدم، Tabby، Tamara). "
-    "إن وُجد سعر مشطوب قبل الخصم وسعر حالي، فالسعر المطلوب هو الحالي (الأقل). "
-    'يجب أن تكون إجابتك حصراً JSON صحيحاً بهذا الهيكل: {"price": float, "status": "available"}. '
-    "إن لم تجد سعراً كاش واضحاً اجعل price=null. لا تكتب أي نص إضافي."
+    "أنت محلل صفقات آلي محترف. انظر إلى قائمة الأسعار المعطاة للمنتج. "
+    "ابحث عن السعر الأقل والمنطقي للمنتج الأساسي. "
+    "تجاهل تماماً الإكسسوارات الرخيصة أو القطع الجانبية الخادعة التي لا تطابق اسم المنتج المطلوب. "
+    "يجب أن تكون إجابتك حصراً بصيغة JSON صحيحة بهذا الهيكل فقط دون أي نص إضافي: "
+    '{"price": float, "store_name": "string", "url": "string"}. '
+    "إن لم تجد سعراً منطقياً للمنتج الأساسي اجعل price=null."
 )
 
 
@@ -51,7 +39,7 @@ def load_targets():
             return []
         with open(TARGETS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-        valid = [t for t in data if t.get("url") and t.get("name")]
+        valid = [t for t in data if isinstance(t, dict) and t.get("name")]
         print(f"📋 عدد الأهداف: {len(valid)}")
         return valid
     except Exception as e:
@@ -77,76 +65,36 @@ def save_prices(data):
         print(f"تحذير: حفظ prices.json ({e})")
 
 
-def fetch_html(url):
-    if CFFI_OK:
-        try:
-            r = cffi.get(url, impersonate="chrome", timeout=FETCH_TIMEOUT)
-            print(f"   [curl_cffi] كود {r.status_code} | طول {len(r.text or '')}")
-            if r.status_code == 200 and r.text:
-                return r.text
-        except Exception as e:
-            print(f"   [curl_cffi] فشل ({type(e).__name__})")
+def serper_shopping(name):
+    """يبحث في Google Shopping عبر Serper ويرجع أول 5 نتائج."""
+    if not SERPER_API_KEY:
+        print("   ⛔ مفتاح Serper غير موجود.")
+        return []
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-                   "Accept-Language": "ar,en;q=0.8"}
-        r = plain_requests.get(url, headers=headers, timeout=FETCH_TIMEOUT)
-        print(f"   [requests] كود {r.status_code} | طول {len(r.text or '')}")
-        if r.status_code == 200:
-            return r.text
+        headers = {"X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json"}
+        payload = {"q": name, "gl": "sa", "hl": "ar"}
+        r = requests.post(SERPER_URL, headers=headers, json=payload, timeout=25)
+        if r.status_code != 200:
+            print(f"   ⛔ Serper كود {r.status_code}")
+            return []
+        items = r.json().get("shopping", []) or r.json().get("shopping_results", [])
+        results = []
+        for it in items[:RESULTS_PER_PRODUCT]:
+            results.append({
+                "title": it.get("title", ""),
+                "price": it.get("price", ""),
+                "link": it.get("link", ""),
+                "source": it.get("source", ""),
+            })
+        print(f"   🛒 نتائج Serper: {len(results)}")
+        return results
     except Exception as e:
-        print(f"   [requests] فشل ({type(e).__name__})")
-    return None
-
-
-def smart_price_text(html):
-    """
-    بدل أول 4000 حرف عشوائياً: يبحث في كامل الصفحة عن المقاطع التي تذكر السعر،
-    ويجمع كل مقطع مع النص المحيط به، فيضمن وصول السعر مهما كان موقعه.
-    """
-    try:
-        soup = BeautifulSoup(html, "html.parser")
-        for tag in soup(["script", "style", "noscript", "svg", "head"]):
-            tag.decompose()
-
-        full = re.sub(r"\s+", " ", soup.get_text(separator=" ", strip=True))
-        if not full:
-            return None
-
-        low = full.lower()
-        chunks, used = [], []
-
-        # نلتقط كل موضع تظهر فيه كلمة سعر، ونأخذ ما حولها (نافذة 220 حرفاً)
-        for hint in PRICE_HINTS:
-            start = 0
-            while True:
-                idx = low.find(hint, start)
-                if idx == -1:
-                    break
-                a = max(0, idx - 120)
-                b = min(len(full), idx + 100)
-                # نتفادى تكرار نفس المنطقة
-                if not any(abs(idx - u) < 60 for u in used):
-                    chunks.append(full[a:b])
-                    used.append(idx)
-                start = idx + len(hint)
-                if len(chunks) >= 25:
-                    break
-
-        if chunks:
-            combined = " … ".join(chunks)
-            # نضيف بداية الصفحة (غالباً فيها العنوان والسعر الرئيسي) لمزيد من السياق
-            combined = full[:600] + " … " + combined
-            return combined[:TEXT_LIMIT]
-
-        # إن لم نجد أي كلمة سعر، نرجع لبداية الصفحة كحل أخير
-        return full[:TEXT_LIMIT]
-    except Exception as e:
-        print(f"   تعذّر تجهيز النص ({type(e).__name__})")
-        return None
+        print(f"   ⛔ فشل Serper ({type(e).__name__})")
+        return []
 
 
 def num(x):
+    import re
     try:
         v = float(re.sub(r"[^\d.]", "", str(x).replace(",", "")))
         return v if v > 0 else None
@@ -154,17 +102,27 @@ def num(x):
         return None
 
 
-def extract_price(text):
+def decide_best(name, results):
+    """يرسل النتائج الـ5 إلى Groq لاختيار أرخص سعر منطقي للمنتج الأساسي."""
     try:
         c = client.chat.completions.create(
             model=MODEL,
-            messages=[{"role": "system", "content": EXTRACT_SYSTEM},
-                      {"role": "user", "content": text}],
-            temperature=0, max_tokens=120,
+            messages=[
+                {"role": "system", "content": EXTRACT_SYSTEM},
+                {"role": "user", "content": f"المنتج المطلوب: {name}\n\nقائمة النتائج:\n{json.dumps(results, ensure_ascii=False)}"},
+            ],
+            temperature=0,
+            max_tokens=160,
             response_format={"type": "json_object"},
         )
         d = json.loads(c.choices[0].message.content)
-        return num(d.get("price")), str(d.get("status", "")).strip()
+        price = num(d.get("price"))
+        if price:
+            return {
+                "price": price,
+                "store_name": str(d.get("store_name", "")).strip() or "متجر",
+                "url": str(d.get("url", "")).strip(),
+            }
     except Exception as e:
         msg = str(e).lower()
         if "rate" in msg or "429" in msg:
@@ -174,17 +132,21 @@ def extract_price(text):
                 c = client.chat.completions.create(
                     model=MODEL,
                     messages=[{"role": "system", "content": EXTRACT_SYSTEM},
-                              {"role": "user", "content": text}],
-                    temperature=0, max_tokens=120,
+                              {"role": "user", "content": f"المنتج المطلوب: {name}\n\nقائمة النتائج:\n{json.dumps(results, ensure_ascii=False)}"}],
+                    temperature=0, max_tokens=160,
                     response_format={"type": "json_object"},
                 )
                 d = json.loads(c.choices[0].message.content)
-                return num(d.get("price")), str(d.get("status", "")).strip()
+                price = num(d.get("price"))
+                if price:
+                    return {"price": price,
+                            "store_name": str(d.get("store_name", "")).strip() or "متجر",
+                            "url": str(d.get("url", "")).strip()}
             except Exception as e2:
                 print(f"   فشل بعد الإعادة ({type(e2).__name__})")
         else:
             print(f"   ⛔ خطأ Groq ({type(e).__name__})")
-    return None, ""
+    return None
 
 
 def send_telegram(text):
@@ -193,14 +155,14 @@ def send_telegram(text):
         return
     try:
         api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        r = plain_requests.post(api, data={"chat_id": TELEGRAM_CHAT_ID, "text": text}, timeout=20)
+        r = requests.post(api, data={"chat_id": TELEGRAM_CHAT_ID, "text": text}, timeout=20)
         print("   ✅ أُرسل تنبيه تليجرام" if r.status_code == 200 else f"   تحذير: تليجرام {r.status_code}")
     except Exception as e:
         print(f"   تحذير: فشل تليجرام ({e})")
 
 
 def main():
-    print("بدء جولة V4.1 (استهداف ذكي للسعر)...")
+    print("بدء جولة V5.0 (Autonomous API Hunter)...")
     targets = load_targets()
     if not targets:
         print("⛔ لا توجد أهداف.")
@@ -210,48 +172,47 @@ def main():
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M")
 
     for t in targets:
-        name, url = t["name"], t["url"]
+        name = t["name"]
         print(f"\nالمنتج: {name}")
 
         if name not in prices or not isinstance(prices[name], dict):
-            prices[name] = {"url": url, "readings": []}
-        prices[name]["url"] = url
+            prices[name] = {"readings": []}
         prices[name].setdefault("readings", [])
         prices[name]["last_checked"] = now
 
         old = [r["price"] for r in prices[name]["readings"] if r.get("price")]
         hist_low = min(old) if old else None
 
-        html = fetch_html(url)
-        if not html:
-            prices[name]["last_status"] = "تعذّر جلب الصفحة"
-            print("   ⛔ تعذّر جلب الصفحة.")
+        results = serper_shopping(name)
+        if not results:
+            prices[name]["last_status"] = "لا نتائج بحث"
             continue
+        time.sleep(1)
 
-        text = smart_price_text(html)
-        if not text:
-            prices[name]["last_status"] = "تعذّر قراءة المحتوى"
-            continue
-        print(f"   📄 طول النص المُجمَّع: {len(text)}")
-
-        price, status = extract_price(text)
+        best = decide_best(name, results)
         time.sleep(GROQ_PAUSE)
 
-        if not price:
-            prices[name]["last_status"] = "لم يُعثر على سعر"
-            print("   ⛔ لا سعر.")
+        if not best:
+            prices[name]["last_status"] = "لم يُعثر على سعر منطقي"
+            print("   ⛔ لا سعر منطقي.")
             continue
 
-        prices[name]["readings"].append({"t": now, "price": price, "status": status, "url": url})
+        prices[name]["readings"].append({
+            "t": now, "price": best["price"],
+            "store": best["store_name"], "url": best["url"],
+        })
         prices[name]["readings"] = prices[name]["readings"][-200:]
-        prices[name]["last_status"] = status or "available"
-        print(f"   ✅ السعر: {price} SAR | {status}")
+        prices[name]["last_status"] = "تم التحديث"
+        print(f"   ✅ {best['price']} SAR في {best['store_name']}")
 
-        if hist_low and price < hist_low:
-            drop = round((hist_low - price) / hist_low * 100, 1)
+        if hist_low and best["price"] < hist_low:
+            drop = round((hist_low - best["price"]) / hist_low * 100, 1)
             if drop >= DROP_ALERT_PERCENT:
-                send_telegram(f"🚨 انهيار في السعر! منتج {name} نزل بنسبة {drop}%. "
-                              f"السعر الآن {price} ريال. رابط الشراء: {url}")
+                send_telegram(
+                    f"🚨 انهيار في السعر! منتج {name} نزل بنسبة {drop}%. "
+                    f"السعر الآن {best['price']} ريال في {best['store_name']}. "
+                    f"رابط الشراء: {best['url']}"
+                )
                 print(f"   🚨 انخفاض {drop}%")
 
     save_prices(prices)
