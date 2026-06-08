@@ -26,7 +26,6 @@ GITHUB_BRANCH = secret("GITHUB_BRANCH", "main")
 
 
 def read_targets():
-    """يقرأ قائمة الأهداف من الملف ويعيدها كقائمة بايثون."""
     try:
         if os.path.exists(TARGETS_FILE):
             with open(TARGETS_FILE, "r", encoding="utf-8") as f:
@@ -39,7 +38,6 @@ def read_targets():
 
 
 def save_targets_to_github(targets_list):
-    """يحوّل القائمة إلى JSON ويحفظها في GitHub. المستخدم لا يرى أي JSON."""
     if not (GITHUB_TOKEN and GITHUB_REPO):
         return False, "لم يتم ضبط GITHUB_TOKEN أو GITHUB_REPO في إعدادات التطبيق."
     try:
@@ -77,23 +75,37 @@ def read_prices():
 
 st.title("🎯 صياد العروض — V4")
 
-# نحتفظ بالقائمة في ذاكرة الجلسة، ونحمّلها أول مرة من الملف
 if "targets" not in st.session_state:
     st.session_state.targets = read_targets()
 
 prices = read_prices()
+
+# مجموعة الروابط الفعّالة حالياً (للفلترة ضد الأشباح)
+active_urls = {t["url"] for t in st.session_state.targets}
+
 tab1, tab2 = st.tabs(["🔥 لوحة الأسعار", "🎯 منتجاتي"])
 
-# ============ تبويب الأسعار ============
+# ============ لوحة الأسعار (تعرض الفعّال فقط) ============
 with tab1:
     rows, chart_rows = [], []
+    shown = 0
+
     for name, info in prices.items():
-        readings = info.get("readings", []) if isinstance(info, dict) else []
-        url = info.get("url", "") if isinstance(info, dict) else ""
+        if not isinstance(info, dict):
+            continue
+        url = info.get("url", "")
+
+        # الفلتر: تجاهل أي منتج رابطه غير موجود في targets.json الحالي
+        if url not in active_urls:
+            continue
+        shown += 1
+
+        readings = info.get("readings", [])
         if not readings:
             rows.append({"🔥": "", "المنتج": name, "أحدث سعر": None, "أقل سعر مسجل": None,
                          "الحالة": info.get("last_status", "بانتظار سعر"), "الرابط": url})
             continue
+
         last = readings[-1]
         hist = [r["price"] for r in readings if r.get("price")]
         low = min(hist) if hist else None
@@ -127,14 +139,14 @@ with tab1:
             pivot = cdf.pivot_table(index="الوقت", columns="المنتج", values="السعر", aggfunc="last")
             st.line_chart(pivot, height=380)
     else:
-        st.info("لا توجد بيانات بعد. أضف منتجاتك من تبويب «منتجاتي» ثم شغّل الوكيل من GitHub.")
+        st.info("لا توجد بيانات للمنتجات الحالية بعد. أضف منتجاتك ثم شغّل الوكيل من GitHub.")
 
-# ============ تبويب منتجاتي (بدون أي JSON) ============
+# ============ منتجاتي (إضافة/حذف بدون JSON) ============
 with tab2:
     st.subheader("➕ إضافة منتج جديد")
     st.caption("اكتب الاسم والرابط فقط. لا حاجة لأي رموز أو أقواس.")
 
-    new_name = st.text_input("اسم المنتج", placeholder="مثال: ماك بوك برو M4 - جرير")
+    new_name = st.text_input("اسم المنتج", placeholder="مثال: مطحنة قهوة - متجر القهوة")
     new_url = st.text_input("رابط صفحة المنتج", placeholder="https://...")
 
     if st.button("➕ إضافة المنتج", use_container_width=True):
@@ -150,9 +162,10 @@ with tab2:
             st.session_state.targets.append({"name": nm, "url": ur})
             ok, msg = save_targets_to_github(st.session_state.targets)
             if ok:
-                st.success(f"تمت إضافة «{nm}» وحفظه ✅")
+                st.success(f"تمت إضافة «{nm}» ✅")
+                st.rerun()
             else:
-                st.session_state.targets.pop()  # تراجع لو فشل الحفظ
+                st.session_state.targets.pop()
                 st.error(msg)
 
     st.divider()
@@ -174,5 +187,5 @@ with tab2:
                         st.success(f"حُذف «{removed['name']}»")
                         st.rerun()
                     else:
-                        st.session_state.targets.insert(i, removed)  # تراجع لو فشل
+                        st.session_state.targets.insert(i, removed)
                         st.error(msg)
