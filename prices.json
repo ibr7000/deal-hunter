@@ -43,15 +43,21 @@
         "price": 200.0,
         "status": "available",
         "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-%D8%A7%D9%84%D9%88%D8%A7%D9%86-%D9%85%D8%AA%D8%B9%D8%AF%D8%AF%D8%A9-1zpresso-q-air/p717464546"
+      },
+      {
+        "t": "2026-06-08 13:24",
+        "price": 200.0,
+        "status": "available",
+        "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-%D8%A7%D9%84%D9%88%D8%A7%D9%86-%D9%85%D8%AA%D8%B9%D8%AF%D8%AF%D8%A9-1zpresso-q-air/p717464546"
       }
     ],
-    "last_checked": "2026-06-08 11:03",
+    "last_checked": "2026-06-08 13:24",
     "last_status": "available"
   },
   "1z 2": {
     "url": "https://a.aliexpress.com/_c3KBVtL3",
     "readings": [],
-    "last_checked": "2026-06-08 11:03",
+    "last_checked": "2026-06-08 13:24",
     "last_status": "لم يُعثر على سعر"
   },
   "1zpresso k ultra +": {
@@ -62,16 +68,29 @@
         "price": 889.0,
         "status": "available",
         "url": "https://masarrah1.com/%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88/p2055235912"
+      },
+      {
+        "t": "2026-06-08 13:24",
+        "price": 889.0,
+        "status": "available",
+        "url": "https://masarrah1.com/%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88/p2055235912"
       }
     ],
-    "last_checked": "2026-06-08 11:03",
+    "last_checked": "2026-06-08 13:24",
     "last_status": "available"
   },
   "1zpresso k ultra": {
     "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-1zpresso-k-ultra/p326664255",
-    "readings": [],
-    "last_checked": "2026-06-08 11:03",
-    "last_status": "لم يُعثر على سعر"
+    "readings": [
+      {
+        "t": "2026-06-08 13:24",
+        "price": 781.74,
+        "status": "available",
+        "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-1zpresso-k-ultra/p326664255"
+      }
+    ],
+    "last_checked": "2026-06-08 13:24",
+    "last_status": "available"
   },
   "Xbloom studio 1": {
     "url": "https://wtr.sa/ar/%D9%85%D8%A7%D9%83%D9%8A%D9%86%D8%A9-%D8%A7%D9%83%D8%B3%D8%A8%D9%84%D9%88%D9%85-%D8%A7%D8%B3%D8%AA%D9%88%D8%AF%D9%8A%D9%88-%D8%A7%D8%B3%D9%88%D8%AF-%D9%88-%D8%A7%D8%A8%D9%8A%D8%B6-xbloom-studio/p421376659",
@@ -123,5 +142,18 @@
     "readings": [],
     "last_checked": "2026-06-08 11:03",
     "last_status": "تعذّر جلب الصفحة"
+  },
+  "١zpresso zp6": {
+    "url": "https://www.shub.coffee/collections/1zpresso/products/zp6-special-hand-coffee-grinder-iron-grey-1zpresso",
+    "readings": [
+      {
+        "t": "2026-06-08 13:24",
+        "price": 940.0,
+        "status": "available",
+        "url": "https://www.shub.coffee/collections/1zpresso/products/zp6-special-hand-coffee-grinder-iron-grey-1zpresso"
+      }
+    ],
+    "last_checked": "2026-06-08 13:24",
+    "last_status": "available"
   }
 }
