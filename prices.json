@@ -37,15 +37,91 @@
         "price": 200.0,
         "status": "available",
         "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-%D8%A7%D9%84%D9%88%D8%A7%D9%86-%D9%85%D8%AA%D8%B9%D8%AF%D8%AF%D8%A9-1zpresso-q-air/p717464546"
+      },
+      {
+        "t": "2026-06-08 11:03",
+        "price": 200.0,
+        "status": "available",
+        "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-%D8%A7%D9%84%D9%88%D8%A7%D9%86-%D9%85%D8%AA%D8%B9%D8%AF%D8%AF%D8%A9-1zpresso-q-air/p717464546"
       }
     ],
-    "last_checked": "2026-06-07 22:17",
+    "last_checked": "2026-06-08 11:03",
     "last_status": "available"
   },
   "1z 2": {
     "url": "https://a.aliexpress.com/_c3KBVtL3",
     "readings": [],
-    "last_checked": "2026-06-07 22:17",
+    "last_checked": "2026-06-08 11:03",
     "last_status": "لم يُعثر على سعر"
+  },
+  "1zpresso k ultra +": {
+    "url": "https://masarrah1.com/%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88/p2055235912",
+    "readings": [
+      {
+        "t": "2026-06-08 11:03",
+        "price": 889.0,
+        "status": "available",
+        "url": "https://masarrah1.com/%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88/p2055235912"
+      }
+    ],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "available"
+  },
+  "1zpresso k ultra": {
+    "url": "https://wtr.sa/ar/%D8%B7%D8%A7%D8%AD%D9%88%D9%86%D8%A9-%D9%8A%D8%AF%D9%88%D9%8A%D8%A9-%D9%83%D9%8A-%D8%A7%D9%84%D8%AA%D8%B1%D8%A7-%D9%88%D9%86-%D8%B2%D8%A8%D8%B1%D9%8A%D8%B3%D9%88-1zpresso-k-ultra/p326664255",
+    "readings": [],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "لم يُعثر على سعر"
+  },
+  "Xbloom studio 1": {
+    "url": "https://wtr.sa/ar/%D9%85%D8%A7%D9%83%D9%8A%D9%86%D8%A9-%D8%A7%D9%83%D8%B3%D8%A8%D9%84%D9%88%D9%85-%D8%A7%D8%B3%D8%AA%D9%88%D8%AF%D9%8A%D9%88-%D8%A7%D8%B3%D9%88%D8%AF-%D9%88-%D8%A7%D8%A8%D9%8A%D8%B6-xbloom-studio/p421376659",
+    "readings": [
+      {
+        "t": "2026-06-08 11:03",
+        "price": 2459.0,
+        "status": "available",
+        "url": "https://wtr.sa/ar/%D9%85%D8%A7%D9%83%D9%8A%D9%86%D8%A9-%D8%A7%D9%83%D8%B3%D8%A8%D9%84%D9%88%D9%85-%D8%A7%D8%B3%D8%AA%D9%88%D8%AF%D9%8A%D9%88-%D8%A7%D8%B3%D9%88%D8%AF-%D9%88-%D8%A7%D8%A8%D9%8A%D8%B6-xbloom-studio/p421376659"
+      }
+    ],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "available"
+  },
+  "Xbloom studio 2": {
+    "url": "https://www.shub.coffee/en/collections/xbloom-machines/products/studio-midnight-black-xbloom",
+    "readings": [
+      {
+        "t": "2026-06-08 11:03",
+        "price": 2459.0,
+        "status": "available",
+        "url": "https://www.shub.coffee/en/collections/xbloom-machines/products/studio-midnight-black-xbloom"
+      }
+    ],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "available"
+  },
+  "Xbloom studio 3": {
+    "url": "https://modernsupply.com.sa/products/%D8%A7%D9%83%D8%B3%D8%A8%D9%84%D9%88%D9%85-%D8%A7%D8%B3%D9%88%D8%AF-1",
+    "readings": [
+      {
+        "t": "2026-06-08 11:03",
+        "price": 2827.85,
+        "status": "available",
+        "url": "https://modernsupply.com.sa/products/%D8%A7%D9%83%D8%B3%D8%A8%D9%84%D9%88%D9%85-%D8%A7%D8%B3%D9%88%D8%AF-1"
+      }
+    ],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "available"
+  },
+  "Samsung watch 8 jarir": {
+    "url": "https://www.jarir.com/sa-en/samsung-galaxy-watch-8-40-smartwatch-662002.html",
+    "readings": [],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "لم يُعثر على سعر"
+  },
+  "1zpresso zp6": {
+    "url": "https://www.shub.coffee/collections/1zpresso/products/zp6-special-hand-coffee-grinder-iron-grey-1zpresso",
+    "readings": [],
+    "last_checked": "2026-06-08 11:03",
+    "last_status": "تعذّر جلب الصفحة"
   }
 }
