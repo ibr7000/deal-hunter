@@ -6,7 +6,7 @@ import requests
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="صياد العروض V4", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="صياد العروض V5", page_icon="🎯", layout="wide")
 st.markdown("<style>.stApp{direction:rtl;text-align:right;}</style>", unsafe_allow_html=True)
 
 TARGETS_FILE = "targets.json"
@@ -31,7 +31,7 @@ def read_targets():
             with open(TARGETS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, list):
-                    return [t for t in data if isinstance(t, dict) and t.get("name") and t.get("url")]
+                    return [t for t in data if isinstance(t, dict) and t.get("name")]
     except Exception:
         pass
     return []
@@ -73,39 +73,29 @@ def read_prices():
     return {}
 
 
-st.title("🎯 صياد العروض — V4")
+st.title("🎯 صياد العروض — V5 (API Hunter)")
 
 if "targets" not in st.session_state:
     st.session_state.targets = read_targets()
 
 prices = read_prices()
 
-# مجموعة الروابط الفعّالة حالياً (للفلترة ضد الأشباح)
-active_urls = {t["url"] for t in st.session_state.targets}
+# الأسماء الفعّالة حالياً (لتصفية الأشباح)
+active_names = {t["name"] for t in st.session_state.targets}
 
 tab1, tab2 = st.tabs(["🔥 لوحة الأسعار", "🎯 منتجاتي"])
 
-# ============ لوحة الأسعار (تعرض الفعّال فقط) ============
+# ============ لوحة الأسعار (الفعّال فقط) ============
 with tab1:
     rows, chart_rows = [], []
-    shown = 0
-
     for name, info in prices.items():
-        if not isinstance(info, dict):
-            continue
-        url = info.get("url", "")
-
-        # الفلتر: تجاهل أي منتج رابطه غير موجود في targets.json الحالي
-        if url not in active_urls:
-            continue
-        shown += 1
-
+        if name not in active_names or not isinstance(info, dict):
+            continue  # تصفية الأشباح: تجاهل ما حُذف من الأهداف
         readings = info.get("readings", [])
         if not readings:
-            rows.append({"🔥": "", "المنتج": name, "أحدث سعر": None, "أقل سعر مسجل": None,
-                         "الحالة": info.get("last_status", "بانتظار سعر"), "الرابط": url})
+            rows.append({"🔥": "", "المنتج": name, "أرخص سعر": None, "أقل سعر مسجل": None,
+                         "المتجر الفائز": "", "الحالة": info.get("last_status", "بانتظار سعر"), "الرابط": ""})
             continue
-
         last = readings[-1]
         hist = [r["price"] for r in readings if r.get("price")]
         low = min(hist) if hist else None
@@ -113,10 +103,11 @@ with tab1:
         rows.append({
             "🔥": "🔥" if is_best else "",
             "المنتج": name,
-            "أحدث سعر": last.get("price"),
+            "أرخص سعر": last.get("price"),
             "أقل سعر مسجل": low,
-            "الحالة": last.get("status") or info.get("last_status", ""),
-            "الرابط": url,
+            "المتجر الفائز": last.get("store", ""),
+            "الحالة": info.get("last_status", ""),
+            "الرابط": last.get("url", ""),
         })
         for r in readings:
             if r.get("price"):
@@ -129,11 +120,11 @@ with tab1:
             df, use_container_width=True, hide_index=True,
             column_config={
                 "الرابط": st.column_config.LinkColumn("الشراء", display_text="فتح"),
-                "أحدث سعر": st.column_config.NumberColumn("أحدث سعر", format="%.0f"),
+                "أرخص سعر": st.column_config.NumberColumn("أرخص سعر", format="%.0f"),
                 "أقل سعر مسجل": st.column_config.NumberColumn("أقل سعر مسجل", format="%.0f"),
             },
         )
-        st.subheader("📈 تاريخ السعر")
+        st.subheader("📈 تاريخ الأسعار")
         cdf = pd.DataFrame(chart_rows)
         if not cdf.empty:
             pivot = cdf.pivot_table(index="الوقت", columns="المنتج", values="السعر", aggfunc="last")
@@ -141,25 +132,21 @@ with tab1:
     else:
         st.info("لا توجد بيانات للمنتجات الحالية بعد. أضف منتجاتك ثم شغّل الوكيل من GitHub.")
 
-# ============ منتجاتي (إضافة/حذف بدون JSON) ============
+# ============ منتجاتي (أسماء فقط) ============
 with tab2:
     st.subheader("➕ إضافة منتج جديد")
-    st.caption("اكتب الاسم والرابط فقط. لا حاجة لأي رموز أو أقواس.")
+    st.caption("اكتب اسم المنتج فقط. لا روابط ولا رموز.")
 
-    new_name = st.text_input("اسم المنتج", placeholder="مثال: مطحنة قهوة - متجر القهوة")
-    new_url = st.text_input("رابط صفحة المنتج", placeholder="https://...")
+    new_name = st.text_input("اسم المنتج", placeholder="مثال: Galaxy S25 Ultra 256GB")
 
     if st.button("➕ إضافة المنتج", use_container_width=True):
         nm = (new_name or "").strip()
-        ur = (new_url or "").strip()
-        if not nm or not ur:
-            st.error("الرجاء تعبئة الاسم والرابط معاً.")
-        elif not ur.startswith("http"):
-            st.error("الرابط يجب أن يبدأ بـ http أو https.")
+        if not nm:
+            st.error("الرجاء كتابة اسم المنتج.")
         elif any(t["name"] == nm for t in st.session_state.targets):
-            st.error("هذا الاسم مستخدم. أضف كلمة مميزة (مثل اسم المتجر) ليكون مختلفاً.")
+            st.error("هذا الاسم موجود مسبقاً.")
         else:
-            st.session_state.targets.append({"name": nm, "url": ur})
+            st.session_state.targets.append({"name": nm})
             ok, msg = save_targets_to_github(st.session_state.targets)
             if ok:
                 st.success(f"تمت إضافة «{nm}» ✅")
@@ -178,7 +165,6 @@ with tab2:
             c1, c2 = st.columns([5, 1])
             with c1:
                 st.markdown(f"**{t['name']}**")
-                st.markdown(f"[{t['url'][:55]}…]({t['url']})")
             with c2:
                 if st.button("🗑️ حذف", key=f"del_{i}", use_container_width=True):
                     removed = st.session_state.targets.pop(i)
