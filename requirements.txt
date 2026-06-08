@@ -1,7 +1,4 @@
 streamlit
 requests
 pandas
-cloudscraper
-curl_cffi
-beautifulsoup4
 groq
