@@ -113,8 +113,25 @@ def num(x):
 
 
 def decide_best(name, results):
-    """يرسل النتائج الـ5 إلى Groq لاختيار أرخص سعر منطقي للمنتج الأساسي."""
-    try:
+    """يرسل النتائج إلى Groq لاختيار أرخص سعر منطقي للمنتج الأساسي،
+    مع حارس يرفض السعر الشاذ المنخفض جداً (فخّ الإكسسوارات)."""
+
+    # حساب وسيط أسعار النتائج لاكتشاف الشاذ المنخفض (الإكسسوارات)
+    import statistics
+    listed = [num(r.get("price")) for r in results]
+    listed = [p for p in listed if p]
+    median_price = statistics.median(listed) if listed else None
+
+    def guard(best):
+        """يرفض السعر إن كان منخفضاً بشكل غير منطقي مقارنة بوسيط النتائج."""
+        if not best or not best.get("price"):
+            return None
+        if median_price and best["price"] < median_price * 0.45:
+            print(f"   🛡️ رُفض {best['price']} (أقل من نصف الوسيط {median_price:.0f}) — فخّ إكسسوار محتمل.")
+            return None
+        return best
+
+    def call():
         c = client.chat.completions.create(
             model=MODEL,
             messages=[
@@ -133,31 +150,22 @@ def decide_best(name, results):
                 "store_name": str(d.get("store_name", "")).strip() or "متجر",
                 "url": str(d.get("url", "")).strip(),
             }
+        return None
+
+    try:
+        return guard(call())
     except Exception as e:
         msg = str(e).lower()
         if "rate" in msg or "429" in msg:
             print("   Groq مزدحم، انتظار 25ث وإعادة...")
             time.sleep(25)
             try:
-                c = client.chat.completions.create(
-                    model=MODEL,
-                    messages=[{"role": "system", "content": EXTRACT_SYSTEM},
-                              {"role": "user", "content": f"المنتج المطلوب: {name}\n\nقائمة النتائج:\n{json.dumps(results, ensure_ascii=False)}"}],
-                    temperature=0, max_tokens=160,
-                    response_format={"type": "json_object"},
-                )
-                d = json.loads(c.choices[0].message.content)
-                price = num(d.get("price"))
-                if price:
-                    return {"price": price,
-                            "store_name": str(d.get("store_name", "")).strip() or "متجر",
-                            "url": str(d.get("url", "")).strip()}
+                return guard(call())
             except Exception as e2:
                 print(f"   فشل بعد الإعادة ({type(e2).__name__})")
         else:
             print(f"   ⛔ خطأ Groq ({type(e).__name__})")
     return None
-
 
 def send_telegram(text):
     if not (TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
